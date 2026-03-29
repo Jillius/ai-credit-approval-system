@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Credit Risk Prediction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>AI Credit Appraiser</h1>
+            <p>Powered by TabPFN Foundation Model</p>
+        </header>
+
+        <form id="credit-form">
+            <div class="grid">
+                <!-- Loan Details -->
+                <div class="card form-section">
+                    <h2><span class="icon">💼</span> Loan Details</h2>
+                    <div class="input-group">
+                        <label for="credit_amount">Credit Amount ($)</label>
+                        <input type="number" id="credit_amount" name="credit_amount" required placeholder="e.g. 5000" min="100" value="5000">
+                    </div>
+                    <div class="input-group">
+                        <label for="duration">Duration (Months)</label>
+                        <input type="number" id="duration" name="duration" required placeholder="e.g. 24" min="1" value="24">
+                    </div>
+                    <div class="input-group">
+                        <label for="purpose">Purpose</label>
+                        <select id="purpose" name="purpose">
+                            <option value="radio/tv">Radio/TV</option>
+                            <option value="education">Education</option>
+                            <option value="furniture/equipment">Furniture/Equipment</option>
+                            <option value="new car">New Car</option>
+                            <option value="used car">Used Car</option>
+                            <option value="business">Business</option>
+                            <option value="domestic appliance">Domestic Appliance</option>
+                            <option value="repairs">Repairs</option>
+                            <option value="vacation">Vacation</option>
+                            <option value="retraining">Retraining</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="installment_commitment">Installment Rate (% of disposable income)</label>
+                        <input type="number" id="installment_commitment" name="installment_commitment" required min="1" max="5" value="4">
+                    </div>
+                    <div class="input-group">
+                        <label for="other_parties">Other Parties</label>
+                        <select id="other_parties" name="other_parties">
+                            <option value="none">None</option>
+                            <option value="guarantor">Guarantor</option>
+                            <option value="co applicant">Co Applicant</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Financial Data -->
+                <div class="card form-section">
+                    <h2><span class="icon">🏦</span> Financial Profile</h2>
+                    <div class="input-group">
+                        <label for="checking_status">Checking Account</label>
+                        <select id="checking_status" name="checking_status">
+                            <option value="no checking">No checking account</option>
+                            <option value="&lt;0">&lt; 0 DM</option>
+                            <option value="0&lt;=X&lt;200">0 &lt;= X &lt; 200 DM</option>
+                            <option value="&gt;=200">&gt;= 200 DM</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="savings_status">Savings Account</label>
+                        <select id="savings_status" name="savings_status">
+                            <option value="&lt;100">&lt; 100 DM</option>
+                            <option value="100&lt;=X&lt;500">100 &lt;= X &lt; 500 DM</option>
+                            <option value="500&lt;=X&lt;1000">500 &lt;= X &lt; 1000 DM</option>
+                            <option value="&gt;=1000">&gt;= 1000 DM</option>
+                            <option value="no known savings" selected>No known savings</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="credit_history">Past Credit History</label>
+                        <select id="credit_history" name="credit_history">
+                            <option value="existing paid" selected>Existing credits paid duly</option>
+                            <option value="all paid">All credits paid</option>
+                            <option value="delayed previously">Delay in paying off</option>
+                            <option value="critical/other existing credit">Critical account</option>
+                            <option value="no credits/all paid">No credits/all paid here</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="employment">Employment Span</label>
+                        <select id="employment" name="employment">
+                            <option value="&gt;=7">&gt;= 7 years</option>
+                            <option value="4&lt;=X&lt;7">4 &lt;= X &lt; 7 years</option>
+                            <option value="1&lt;=X&lt;4" selected>1 &lt;= X &lt; 4 years</option>
+                            <option value="&lt;1">&lt; 1 year</option>
+                            <option value="unemployed">Unemployed</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="other_payment_plans">Other Payment Plans</label>
+                        <select id="other_payment_plans" name="other_payment_plans">
+                            <option value="none">None</option>
+                            <option value="bank">Bank</option>
+                            <option value="stores">Stores</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Personal Info -->
+                <div class="card form-section">
+                    <h2><span class="icon">👤</span> Personal Info</h2>
+                    <div class="input-group">
+                        <label for="age">Age</label>
+                        <input type="number" id="age" name="age" required min="18" max="120" value="30">
+                    </div>
+                    <div class="input-group">
+                        <label for="job">Job</label>
+                        <select id="job" name="job">
+                            <option value="skilled" selected>Skilled employee/official</option>
+                            <option value="unskilled resident">Unskilled resident</option>
+                            <option value="high qualif/self emp/mgmt">Management/Self-employed/Highly qualified</option>
+                            <option value="unemp/unskilled non res">Unemployed/Unskilled non-resident</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="housing">Housing</label>
+                        <select id="housing" name="housing">
+                            <option value="own" selected>Own</option>
+                            <option value="rent">Rent</option>
+                            <option value="for free">For free (e.g. lives with parents)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="property_magnitude">Property</label>
+                        <select id="property_magnitude" name="property_magnitude">
+                            <option value="no known property">Unknown / No Property</option>
+                            <option value="car" selected>Car or other</option>
+                            <option value="life insurance">Building Soc. Savings / Life Insurance</option>
+                            <option value="real estate">Real Estate</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="personal_status">Personal Status & Sex</label>
+                        <select id="personal_status" name="personal_status">
+                            <option value="male single" selected>Male (Single)</option>
+                            <option value="male mar/wid">Male (Married/Widowed)</option>
+                            <option value="male div/sep">Male (Divorced/Separated)</option>
+                            <option value="female div/dep/mar">Female (Divorced/Separated/Married)</option>
+                            <option value="female single">Female (Single)</option>
+                        </select>
+                    </div>
+<div style="display:none">
+<!-- Hidden fields for the remainder of features with normal defaults -->
+<input type="number" id="existing_credits" name="existing_credits" value="1">
+<input type="number" id="num_dependents" name="num_dependents" value="1">
+<input type="number" id="residence_since" name="residence_since" value="4">
+<input type="hidden" id="own_telephone" name="own_telephone" value="none">
+<input type="hidden" id="foreign_worker" name="foreign_worker" value="yes">
+</div>
+                </div>
+            </div>
+
+            <div class="action-container">
+                <button type="submit" id="submit-btn" class="btn-primary">
+                    <span class="btn-text">EVALUATE CREDIT</span>
+                    <div class="spinner"></div>
+                </button>
+                <div id="ai-status" class="ai-status connecting">Connecting to AI Model...</div>
+            </div>
+        </form>
+
+        <!-- Results Modal/Overlay -->
+        <div id="result-overlay" class="overlay hidden">
+            <div class="result-card card">
+                <button id="close-result" class="close-btn">&times;</button>
+                <div class="result-icon">✨</div>
+                <h2 id="result-title">Approved</h2>
+                <div class="confidence-meter">
+                    <div class="meter-bar">
+                        <div id="confidence-fill" class="meter-fill"></div>
+                    </div>
+                    <span id="confidence-text">98% Confidence</span>
+                </div>
+                <p id="result-desc">The AI has analyzed 20 data points against historical German Credit instances and determined low risk.</p>
+                <button id="reset-btn" class="btn-secondary">New Appraisal</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
