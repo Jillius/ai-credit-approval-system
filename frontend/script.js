@@ -13,6 +13,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let modelReady = false;
     let expectedFeatures = [];
+    let currentModelId = 'model_1';
+
+    // Model Selector Logic
+    const modelSelector = document.getElementById('model_id');
+    const model1Fields = document.getElementById('model-1-fields');
+    const model2Fields = document.getElementById('model-2-fields');
+
+    modelSelector.addEventListener('change', (e) => {
+        currentModelId = e.target.value;
+        if (currentModelId === 'model_2') {
+            document.body.classList.add('theme-laotse');
+            model1Fields.style.display = 'none';
+            model2Fields.style.display = 'block';
+        } else {
+            document.body.classList.remove('theme-laotse');
+            model1Fields.style.display = 'block';
+            model2Fields.style.display = 'none';
+        }
+    });
 
     // Check backend status
     const pollStatus = setInterval(async () => {
@@ -20,20 +39,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('http://127.0.0.1:5000/status');
             const data = await response.json();
             
-            if (data.ready) {
+            const selectedModelData = data[currentModelId];
+            
+            if (selectedModelData && selectedModelData.ready) {
                 modelReady = true;
-                expectedFeatures = data.features;
                 statusDiv.className = 'ai-status ready';
-                statusDiv.innerHTML = `✅ AI Core Online (Test Acc: ${(data.accuracy * 100).toFixed(1)}%)`;
+                statusDiv.innerHTML = `✅ ${currentModelId === 'model_1' ? 'German Credit' : 'LaoTse Credit'} AI Online (Acc: ${(selectedModelData.accuracy * 100).toFixed(1)}%)`;
                 submitBtn.disabled = false;
-                clearInterval(pollStatus);
-            } else if (data.error) {
+            } else if (selectedModelData && selectedModelData.error) {
                 statusDiv.className = 'ai-status error';
-                statusDiv.innerHTML = `❌ AI Error: ${data.error.substring(0, 50)}... Please check terminal.`;
+                statusDiv.innerHTML = `❌ AI Error: ${selectedModelData.error.substring(0, 50)}...`;
                 submitBtn.disabled = true;
-                clearInterval(pollStatus);
-                alert("The AI model failed to initialize! Error: " + data.error);
             } else {
+                modelReady = false;
+                statusDiv.className = 'ai-status connecting';
                 statusDiv.innerHTML = '⚙️ AI Model Initializing...';
                 submitBtn.disabled = true;
             }
@@ -41,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
             statusDiv.className = 'ai-status error';
             statusDiv.innerHTML = 'Backend currently offline. Run start.bat';
             submitBtn.disabled = true;
+            modelReady = false;
         }
     }, 2000);
 
@@ -56,18 +76,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const dataPayload = {};
         
         formData.forEach((value, key) => {
-            // Convert to numbers if they are strictly numerical strings
-            dataPayload[key] = !isNaN(value) && value !== '' ? Number(value) : value;
+            if (key !== 'model_id') {
+                dataPayload[key] = !isNaN(value) && value !== '' ? Number(value) : value;
+            }
         });
-
-        // Ensure all 20 features are sent (use defaults if missing)
-        // We defined all 20 in the HTML including hidden ones.
+        
+        const finalPayload = {
+            model_id: currentModelId,
+            data: dataPayload
+        };
         
         try {
             const response = await fetch('http://127.0.0.1:5000/predict', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dataPayload)
+                body: JSON.stringify(finalPayload)
             });
 
             const result = await response.json();

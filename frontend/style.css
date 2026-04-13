@@ -8,6 +8,9 @@
     --accent-emerald: #10b981;
     --accent-crimson: #ef4444;
     --accent-purple: #8b5cf6;
+    --accent-amber: #f59e0b;
+    --accent-orange: #f97316;
+    --accent-red: #ef4444;
     --input-bg: rgba(0, 0, 0, 0.2);
     --input-border: rgba(255, 255, 255, 0.1);
 }
@@ -141,8 +144,53 @@ h2 {
 }
 
 /* Form Inputs */
+.model-selector-container {
+    max-width: 400px;
+    margin: 1.5rem auto 0 auto;
+    background: var(--card-bg);
+    border: 1px solid var(--accent-blue);
+    border-radius: 12px;
+    padding: 1rem;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+body.theme-laotse .model-selector-container {
+    border-color: var(--accent-amber);
+}
+
+.model-selector-container label {
+    text-align: center;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.model-selector-container select {
+    margin-top: 0.5rem;
+    cursor: pointer;
+}
+
 .input-group {
     margin-bottom: 1.5rem;
+}
+
+/* Theme Switching Overrides */
+body.theme-laotse .blob-1 { background: radial-gradient(circle, var(--accent-amber), transparent); }
+body.theme-laotse .blob-2 { background: radial-gradient(circle, var(--accent-orange), transparent); }
+body.theme-laotse .blob-3 { background: radial-gradient(circle, var(--accent-red), transparent); }
+
+body.theme-laotse .btn-primary {
+    background: linear-gradient(135deg, var(--accent-amber), var(--accent-red));
+    box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
+}
+
+body.theme-laotse .btn-primary:not(:disabled):hover {
+    box-shadow: 0 15px 25px rgba(245, 158, 11, 0.4);
+}
+
+body.theme-laotse input:focus, body.theme-laotse select:focus {
+    border-color: var(--accent-amber);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
 }
 
 label {
