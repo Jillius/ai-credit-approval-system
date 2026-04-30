@@ -1,180 +1,134 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from sklearn.datasets import fetch_openml
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OrdinalEncoder
-from sklearn.metrics import accuracy_score
-from tabpfn import TabPFNClassifier
-import pandas as pd
-import os
-import threading
 import kagglehub
 import glob
+import os
+import pandas as pd
 import numpy as np
-
-# Automatically inject the HuggingFace token for gated models
-os.environ["HF_TOKEN"] = "[hf token here]"
+import threading
+import torch
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from tabpfn import TabPFNClassifier
+from catboost import CatBoostClassifier 
+from sklearn.model_selection import train_test_split
+from sklearn.datasets import fetch_openml
 
 app = Flask(__name__)
 CORS(app)
 
-# Global variables for models
-models = {
-    'model_1': { 'clf': None, 'encoder': None, 'features': None, 'ready': False, 'accuracy': 0.0, 'error': None },
-    'model_2': { 'clf': None, 'encoder': None, 'features': None, 'ready': False, 'accuracy': 0.0, 'error': None }
+engines = {
+    "model_1": {"tabpfn": None, "catboost": None, "features": [], "ready": False},
+    "model_2": {"tabpfn": None, "catboost": None, "features": [], "ready": False}
 }
 
-def train_model_1():
+def train_german_model():
     try:
-        print("[Model 1] Fetching German Credit Dataset...")
         data = fetch_openml('credit-g', version=1, as_frame=True)
         df = data.frame
-        
         X = df.drop(columns=['class'])
-        y = df['class']
-        
-        models['model_1']['features'] = X.columns.tolist()
-        categorical_cols = X.select_dtypes(include=['category', 'object']).columns.tolist()
-        
-        encoder = OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1)
-        X_encoded = X.copy()
-        if categorical_cols:
-            X_encoded[categorical_cols] = encoder.fit_transform(X[categorical_cols])
-        
-        y_encoded = y.map({'good': 1, 'bad': 0})
-        
-        X_train, X_test, y_train, y_test = train_test_split(X_encoded, y_encoded, test_size=0.2, random_state=42)
-        
-        print("[Model 1] Fitting TabPFN Classifier...")
-        clf = TabPFNClassifier()
-        clf.fit(X_train, y_train)
-        
-        preds = clf.predict(X_test)
-        acc = accuracy_score(y_test, preds)
-        
-        models['model_1'].update({
-            'clf': clf, 'encoder': encoder, 'accuracy': acc, 'ready': True
-        })
-        print(f"[Model 1] Ready! Accuracy: {acc:.2f}")
+        y = df['class'].map({'good': 1, 'bad': 0})
+        cat_cols = X.select_dtypes(include=['category', 'object']).columns.tolist()
+        engines["model_1"]["features"] = X.columns.tolist()
+        X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
+        X_train_tab = X_train.copy()
+        for col in cat_cols:
+            X_train_tab[col] = X_train_tab[col].astype('category').cat.codes
+        t_model = TabPFNClassifier(device='cpu')
+        t_model.fit(X_train_tab, y_train)
+        c_model = CatBoostClassifier(iterations=500, verbose=False)
+        c_model.fit(X_train, y_train, cat_features=cat_cols)
+        engines["model_1"]["tabpfn"] = t_model
+        engines["model_1"]["catboost"] = c_model
+        engines["model_1"]["ready"] = True
+        print("Model 1 Ready!")
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        models['model_1']['error'] = str(e)
+        print(f"Model 1 Error: {e}")
 
-def train_model_2():
+def train_kaggle_model():
     try:
-        print("[Model 2] Fetching LaoTse Credit Risk Dataset via Kagglehub...")
         path = kagglehub.dataset_download('laotse/credit-risk-dataset')
         csv_files = glob.glob(os.path.join(path, "*.csv"))
-        if not csv_files:
-            raise FileNotFoundError("Could not find CSV file in Kaggle dataset!")
-            
-        df = pd.read_csv(csv_files[0])
-        # Drop rows with NaNs to keep it simple for categorical encoder and TabPFN
-        df = df.dropna()
+        full_df = pd.read_csv(csv_files[0])
         
-        # TabPFN is optimized for smaller datasets. We'll sample 8000 rows to prevent slow CPU inference and hard limits.
-        if len(df) > 8000:
-            df = df.sample(8000, random_state=42)
-            
-        # The target column is usually 'loan_status' (0 is non-default/good, 1 is default/bad)
-        # TabPFN is fine predicting any labels, but we'll map 0 -> 1 (Approved), 1 -> 0 (Rejected) for consistency with Model 1
+
+        full_df = full_df.dropna()
+        df = full_df.sample(n=min(8000, len(full_df)))
+        
         X = df.drop(columns=['loan_status'])
-        y = df['loan_status'].map({0: 1, 1: 0}) 
+        y = df['loan_status'].apply(lambda x: 0 if x == 1 else 1)
+
+        cat_cols = ['person_home_ownership', 'loan_intent', 'loan_grade', 'cb_person_default_on_file']
+        num_cols = ['person_age', 'person_income', 'person_emp_length', 'loan_amnt', 'loan_int_rate', 
+                    'loan_percent_income', 'cb_person_cred_hist_length']
+
+        for col in cat_cols: X[col] = X[col].astype(str)
+        for col in num_cols: X[col] = pd.to_numeric(X[col], errors='coerce')
         
-        models['model_2']['features'] = X.columns.tolist()
-        categorical_cols = X.select_dtypes(include=['category', 'object']).columns.tolist()
-        
-        encoder = OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1)
-        X_encoded = X.copy()
-        if categorical_cols:
-            X_encoded[categorical_cols] = encoder.fit_transform(X[categorical_cols])
-            
-        X_train, X_test, y_train, y_test = train_test_split(X_encoded, y, test_size=0.2, random_state=42)
-        
-        print("[Model 2] Fitting TabPFN Classifier...")
-        clf = TabPFNClassifier(ignore_pretraining_limits=True)
-        clf.fit(X_train, y_train)
-        
-        preds = clf.predict(X_test)
-        acc = accuracy_score(y_test, preds)
-        
-        models['model_2'].update({
-            'clf': clf, 'encoder': encoder, 'accuracy': acc, 'ready': True
-        })
-        print(f"[Model 2] Ready! Accuracy: {acc:.2f}")
+        X = X.dropna() 
+        y = y.loc[X.index] 
+
+        engines["model_2"]["features"] = X.columns.tolist()
+        X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2)
+
+
+        X_train_tab = X_train.copy()
+        for col in cat_cols:
+            X_train_tab[col] = X_train_tab[col].astype('category').cat.codes
+
+        t_model = TabPFNClassifier(device='cuda', ignore_pretraining_limits=True)
+        t_model.fit(X_train_tab, y_train)
+
+        c_model = CatBoostClassifier(iterations=500, task_type="GPU", devices='0', verbose=False)
+        c_model.fit(X_train, y_train, cat_features=cat_cols)
+
+        engines["model_2"]["tabpfn"] = t_model
+        engines["model_2"]["catboost"] = c_model
+        engines["model_2"]["ready"] = True
+        print("Model 2 GPU Ready!")
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        models['model_2']['error'] = str(e)
+        print(f"Model 2 Error: {e}")
 
-def initialize_models():
-    # To save time, we run them sequentially but it's fast
-    train_model_1()
-    train_model_2()
-
-INIT_THREAD = threading.Thread(target=initialize_models)
-INIT_THREAD.start()
-
-@app.route('/status', methods=['GET'])
-def get_status():
-    safe_models = {}
-    for mod_id, mod_data in models.items():
-        safe_models[mod_id] = {
-            'ready': mod_data['ready'],
-            'accuracy': mod_data['accuracy'],
-            'error': mod_data['error'],
-            'features': mod_data['features']
-        }
-    return jsonify(safe_models)
+threading.Thread(target=train_german_model).start()
+threading.Thread(target=train_kaggle_model).start()
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    req = request.json
+    m_id = req.get('model_id', 'model_1')
+    user_input = req.get('data')
+    if not engines[m_id]["ready"]: return jsonify({"error": "Model not ready"}), 503
+
     try:
-        user_input = request.json
-        model_id = user_input.get('model_id', 'model_1')
-        data_fields = user_input.get('data', {})
+        engine = engines[m_id]
+        df_input = pd.DataFrame([user_input]).reindex(columns=engine["features"])
+
+        # Predict anında tip düzeltme
+        if m_id == "model_2":
+            cat_cols = ['person_home_ownership', 'loan_intent', 'loan_grade', 'cb_person_default_on_file']
+            for col in cat_cols: df_input[col] = df_input[col].astype(str)
+        else:
+            for col in df_input.columns:
+                if df_input[col].dtype == 'object' or df_input[col].dtype == 'category':
+                    df_input[col] = df_input[col].astype(str)
+
+        df_tab = df_input.copy()
+        for col in df_tab.columns:
+            if df_tab[col].dtype == 'object' or df_tab[col].dtype == 'category':
+                df_tab[col] = df_tab[col].astype('category').cat.codes
         
-        m = models[model_id]
-        if not m['ready']:
-            return jsonify({'error': f'{model_id} is still initializing or failed.'}), 503
-            
-        # Extract fields
-        input_data = {}
-        for col in m['features']:
-            input_data[col] = [data_fields.get(col, None)] 
-            
-        input_df = pd.DataFrame(input_data)
-        
-        categorical_cols = input_df.select_dtypes(include=['object', 'category']).columns.tolist()
-        if categorical_cols and m['encoder']:
-             input_df[categorical_cols] = m['encoder'].transform(input_df[categorical_cols])
-             
-        # Make sure datatypes are numeric
-        input_df = input_df.astype(float)
-        
-        prediction = m['clf'].predict(input_df)
-        probability = m['clf'].predict_proba(input_df)
-        
-        # Mapping: 1 is Approved, 0 is Rejected
-        result = int(prediction[0]) 
-        # probability shape [1, 2] usually ordered by classes [0, 1]
-        try:
-            class_idx = list(m['clf'].classes_).index(result)
-            confidence = float(probability[0][class_idx])
-        except Exception:
-            confidence = float(np.max(probability[0]))
+        X_tab_final = df_tab.values.astype('float32')
+        prob_tab = float(engine["tabpfn"].predict_proba(X_tab_final)[0][1])
+        prob_cat = float(engine["catboost"].predict_proba(df_input)[0][1])
+        avg_score = (prob_tab + prob_cat) / 2
         
         return jsonify({
-            'status': 'success',
-            'prediction': 'Approved' if result == 1 else 'Rejected',
-            'confidence': confidence
+            "status": "success", "score": round(avg_score, 2),
+            "tabpfn_result": "Approved" if prob_tab > 0.5 else "Rejected",
+            "catboost_result": "Approved" if prob_cat > 0.5 else "Rejected",
+            "final_decision": "Approved" if avg_score > 0.5 else "Rejected",
+            "conflict": abs(prob_tab - prob_cat) > 0.3
         })
-
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 400
+        return jsonify({"error": str(e)}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000, use_reloader=False)
+    app.run(debug=False, port=5000)
