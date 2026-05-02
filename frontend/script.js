@@ -35,12 +35,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('http://127.0.0.1:5000/predict', { method: 'OPTIONS' });
             statusDiv.className = 'ai-status ready';
-            statusDiv.innerHTML = `✅ Hybrid AI System Online (TabPFN + CatBoost)`;
+            statusDiv.innerHTML = ` Hybrid AI System Online `;
             submitBtn.disabled = false;
             modelReady = true;
         } catch (error) {
             statusDiv.className = 'ai-status connecting';
-            statusDiv.innerHTML = '⚙️ Waiting for AI Models...';
+            statusDiv.innerHTML = ' Waiting for AI Models...';
             submitBtn.disabled = true;
             modelReady = false;
         }
@@ -91,33 +91,43 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function showResult(result) {
-        resultCard.classList.remove('approved', 'rejected');
-        resultDesc.classList.remove('conflict-warning');
-        fillBar.style.width = '0%';
+    resultCard.classList.remove('approved', 'rejected');
+    fillBar.style.width = '0%';
 
-        const isApproved = result.final_decision === 'Approved';
-        
-        resultCard.classList.add(isApproved ? 'approved' : 'rejected');
-        titleStatus.innerText = isApproved ? 'Credit Approved' : 'Credit Rejected';
+    const score = result.score * 100;
+    const isApproved = result.final_decision === 'Approved';
+    resultCard.classList.add(isApproved ? 'approved' : 'rejected');
+    
+    
+    titleStatus.innerText = isApproved ? 'Credit Approved' : 'Credit Rejected';
 
-        let detailText = `Analysis: TabPFN (${result.tabpfn_result}) and CatBoost (${result.catboost_result}) evaluated this application.`;
-        if (result.conflict) {
-            detailText += " Notice: High model disagreement. Manual verification advised.";
-            resultDesc.classList.add('conflict-warning');
-        }
-        resultDesc.innerText = detailText;
-        
-        const perc = (result.score * 100).toFixed(1);
-        confidenceText.innerText = `System Approval Score: ${perc}%`;
-
-        overlay.classList.remove('hidden');
-
-        setTimeout(() => {
-            fillBar.style.width = `${perc}%`;
-        }, 300);
-
-        resetBtnState();
+    
+    let message = "";
+    if (score < 40) {
+        message = "High Risk: Your financial profile does not meet the requirements.";
+    } else if (score >= 40 && score < 50) {
+        message = "Borderline Risk: Credit rejected, but human review could change the outcome.";
+    } else if (score >= 50 && score <= 65) {
+        message = "Conditional Approval: Borderline case, extra documents may be requested.";
+    } else {
+        message = "Strong Approval: Your financial profile indicates high reliability.";
     }
+
+    
+    resultDesc.innerHTML = `${message}<br><small style="opacity: 0.7; display: block; margin-top: 10px;">
+        AI Analysis: TabPFN (${result.tabpfn_result}) | CatBoost (${result.catboost_result})</small>`;
+    
+    
+    const perc = score.toFixed(1);
+    confidenceText.innerText = `Final Approval Probability: ${perc}%`;
+
+    overlay.classList.remove('hidden');
+    setTimeout(() => {
+        fillBar.style.width = `${perc}%`;
+    }, 300);
+
+    resetBtnState();
+}
 
     function resetBtnState() {
         submitBtn.classList.remove('loading');

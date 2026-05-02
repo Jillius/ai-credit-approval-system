@@ -21,6 +21,7 @@ Thumbs.db
 *.pth
 *.joblib
 *.pickle
+*.cbm
 catboost_info/
 
 # Datasets
