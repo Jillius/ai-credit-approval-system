@@ -12,10 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultDesc = document.getElementById('result-desc');
 
     let modelReady = false;
-    let expectedFeatures = [];
     let currentModelId = 'model_1';
 
-    // Model Selector Logic
     const modelSelector = document.getElementById('model_id');
     const model1Fields = document.getElementById('model-1-fields');
     const model2Fields = document.getElementById('model-2-fields');
@@ -33,51 +31,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Check backend status
     const pollStatus = setInterval(async () => {
         try {
-            const response = await fetch('http://127.0.0.1:5000/status');
-            const data = await response.json();
-            
-            const selectedModelData = data[currentModelId];
-            
-            if (selectedModelData && selectedModelData.ready) {
-                modelReady = true;
-                statusDiv.className = 'ai-status ready';
-                statusDiv.innerHTML = `✅ ${currentModelId === 'model_1' ? 'German Credit' : 'LaoTse Credit'} AI Online (Acc: ${(selectedModelData.accuracy * 100).toFixed(1)}%)`;
-                submitBtn.disabled = false;
-            } else if (selectedModelData && selectedModelData.error) {
-                statusDiv.className = 'ai-status error';
-                statusDiv.innerHTML = `❌ AI Error: ${selectedModelData.error.substring(0, 50)}...`;
-                submitBtn.disabled = true;
-            } else {
-                modelReady = false;
-                statusDiv.className = 'ai-status connecting';
-                statusDiv.innerHTML = '⚙️ AI Model Initializing...';
-                submitBtn.disabled = true;
-            }
+            const response = await fetch('http://127.0.0.1:5000/predict', { method: 'OPTIONS' });
+            statusDiv.className = 'ai-status ready';
+            statusDiv.innerHTML = ` Hybrid AI System Online `;
+            submitBtn.disabled = false;
+            modelReady = true;
         } catch (error) {
-            statusDiv.className = 'ai-status error';
-            statusDiv.innerHTML = 'Backend currently offline. Run start.bat';
+            statusDiv.className = 'ai-status connecting';
+            statusDiv.innerHTML = ' Waiting for AI Models...';
             submitBtn.disabled = true;
             modelReady = false;
         }
-    }, 2000);
+    }, 3000);
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!modelReady) return;
 
-        // Button Loading State
         submitBtn.classList.add('loading');
         submitBtn.disabled = true;
 
-        const formData = new FormData(form);
         const dataPayload = {};
+        const activeFieldsContainer = (currentModelId === 'model_1') ? model1Fields : model2Fields;
+        const inputs = activeFieldsContainer.querySelectorAll('input, select, textarea');
         
-        formData.forEach((value, key) => {
-            if (key !== 'model_id') {
-                dataPayload[key] = !isNaN(value) && value !== '' ? Number(value) : value;
+        inputs.forEach(input => {
+            if (input.name && input.name !== 'loan_grade') {
+                const value = input.value;
+                dataPayload[input.name] = !isNaN(value) && value.trim() !== '' ? Number(value) : value;
             }
         });
         
@@ -96,45 +79,55 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (result.status === 'success') {
-                showResult(result.prediction, result.confidence);
+                showResult(result);
             } else {
                 alert(`Error: ${result.error}`);
                 resetBtnState();
             }
-
         } catch (error) {
-            alert('Failed to connect to backend AI server. Check console for details.');
+            alert('Failed to connect to backend AI server.');
             resetBtnState();
         }
     });
 
-    function showResult(prediction, confidence) {
-        // Remove old classes
-        resultCard.classList.remove('approved', 'rejected');
-        fillBar.style.width = '0%';
+    function showResult(result) {
+    resultCard.classList.remove('approved', 'rejected');
+    fillBar.style.width = '0%';
 
-        const isApproved = prediction === 'Approved';
-        
-        // Populate modal
-        resultCard.classList.add(isApproved ? 'approved' : 'rejected');
-        titleStatus.innerText = isApproved ? 'Credit Approved' : 'Credit Rejected';
-        resultDesc.innerText = isApproved 
-            ? 'The TabPFN AI model considers this application low-risk based on historical German Credit data attributes.'
-            : 'The TabPFN AI model has flagged this application as high-risk. Approval is not recommended.';
-        
-        const perc = (confidence * 100).toFixed(1);
-        confidenceText.innerText = `AI Certainty: ${perc}%`;
+    const score = result.score * 100;
+    const isApproved = result.final_decision === 'Approved';
+    resultCard.classList.add(isApproved ? 'approved' : 'rejected');
+    
+    
+    titleStatus.innerText = isApproved ? 'Credit Approved' : 'Credit Rejected';
 
-        // Show overlay
-        overlay.classList.remove('hidden');
-
-        // Animate meter bar after a small delay for transition
-        setTimeout(() => {
-            fillBar.style.width = `${perc}%`;
-        }, 300);
-
-        resetBtnState();
+    
+    let message = "";
+    if (score < 40) {
+        message = "High Risk: Your financial profile does not meet the requirements.";
+    } else if (score >= 40 && score < 50) {
+        message = "Borderline Risk: Credit rejected, but human review could change the outcome.";
+    } else if (score >= 50 && score <= 65) {
+        message = "Conditional Approval: Borderline case, extra documents may be requested.";
+    } else {
+        message = "Strong Approval: Your financial profile indicates high reliability.";
     }
+
+    
+    resultDesc.innerHTML = `${message}<br><small style="opacity: 0.7; display: block; margin-top: 10px;">
+        AI Analysis: TabPFN (${result.tabpfn_result}) | CatBoost (${result.catboost_result})</small>`;
+    
+    
+    const perc = score.toFixed(1);
+    confidenceText.innerText = `Final Approval Probability: ${perc}%`;
+
+    overlay.classList.remove('hidden');
+    setTimeout(() => {
+        fillBar.style.width = `${perc}%`;
+    }, 300);
+
+    resetBtnState();
+}
 
     function resetBtnState() {
         submitBtn.classList.remove('loading');
@@ -150,8 +143,4 @@ document.addEventListener('DOMContentLoaded', () => {
         form.reset();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
-
-    // Initial check
-    statusDiv.innerHTML = '⚙️ AI Model Initializing...';
-    submitBtn.disabled = true;
 });

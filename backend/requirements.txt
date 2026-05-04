@@ -5,3 +5,5 @@ pandas
 tabpfn
 torch
 kagglehub
+catboost
+joblib
