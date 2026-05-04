@@ -12,6 +12,10 @@ from tabpfn import TabPFNClassifier
 from catboost import CatBoostClassifier 
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import fetch_openml
+from dotenv import load_dotenv
+
+# Load secrets from .env (located one folder up in the root directory)
+load_dotenv('../.env')
 
 app = Flask(__name__)
 CORS(app)

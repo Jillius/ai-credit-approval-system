@@ -15,6 +15,129 @@
     --input-border: rgba(255, 255, 255, 0.1);
 }
 
+/* BANK THEME OVERRIDES */
+body.theme-bank {
+    --bg-color: #f1f5f9;
+    --card-bg: #ffffff;
+    --card-border: #cbd5e1;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --accent-blue: #1e3a8a;
+    --accent-emerald: #059669;
+    --input-bg: #f8fafc;
+    --input-border: #cbd5e1;
+}
+
+body.theme-bank h1, body.theme-bank h2, body.theme-bank p {
+    background: none;
+    -webkit-text-fill-color: var(--text-primary);
+    color: var(--text-primary);
+}
+
+body.theme-bank header p, body.theme-bank label {
+    color: var(--text-secondary);
+}
+
+body.theme-bank .background-blobs {
+    display: none;
+}
+
+body.theme-bank .card {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+body.theme-bank .btn-primary {
+    background: var(--accent-blue);
+    box-shadow: 0 4px 6px rgba(30, 58, 138, 0.2);
+}
+
+body.theme-bank .bank-logo {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    top: 1.5rem;
+    left: 2rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-blue);
+}
+
+body.theme-bank .bank-logo .icon {
+    font-size: 2rem;
+    margin-right: 0.5rem;
+}
+
+body.theme-bank input, body.theme-bank select {
+    color: var(--text-primary);
+}
+body.theme-bank select option {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+}
+
+/* SETTINGS GEAR */
+.settings-btn {
+    position: absolute;
+    top: 1.5rem;
+    right: 2rem;
+    font-size: 2rem;
+    cursor: pointer;
+    z-index: 100;
+    transition: transform 0.3s ease;
+}
+.settings-btn:hover {
+    transform: rotate(90deg);
+}
+
+/* SIDEBAR */
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: -350px;
+    width: 320px;
+    height: 100vh;
+    background: var(--bg-color);
+    border-left: 1px solid var(--input-border);
+    backdrop-filter: blur(20px);
+    z-index: 200;
+    transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 2rem;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+}
+body.theme-bank .sidebar {
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar.open {
+    right: 0;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+.sidebar-header h2 {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+}
+
+.setting-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    line-height: 1.4;
+}
+
+.currency-hint {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--accent-emerald);
+    margin-top: 0.25rem;
+    font-style: italic;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -400,3 +523,22 @@ input:focus, select:focus {
     transition: all 0.3s ease;
 }
 .btn-secondary:hover { background: rgba(255,255,255,0.2); }
+
+/* Footer */
+footer {
+    text-align: center;
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--input-border);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+footer a {
+    color: var(--accent-blue);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+footer a:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+}

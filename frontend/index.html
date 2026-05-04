@@ -14,6 +14,44 @@
         <div class="blob blob-3"></div>
     </div>
 
+    <!-- BANK THEME LOGO -->
+    <div id="bank-logo" class="bank-logo hidden">
+        <span class="icon">🏛️</span> MIYB
+    </div>
+
+    <!-- SETTINGS GEAR ICON -->
+    <div id="settings-btn" class="settings-btn">⚙️</div>
+
+    <!-- SETTINGS SIDEBAR -->
+    <aside id="settings-sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2>⚙️ App Settings</h2>
+            <button id="close-settings" class="close-btn">&times;</button>
+        </div>
+        <div class="sidebar-content">
+            <div class="input-group">
+                <label for="theme-selector">App Theme</label>
+                <select id="theme-selector">
+                    <option value="default">AI Core (Default)</option>
+                    <option value="laotse">LaoTse (Amber)</option>
+                    <option value="bank">TrustBank (Corporate)</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="currency-selector">Local Currency</label>
+                <select id="currency-selector">
+                    <option value="EUR">Euro (EUR)</option>
+                    <option value="USD" selected>US Dollar (USD)</option>
+                    <option value="GBP">British Pound (GBP)</option>
+                    <option value="TRY">Turkish Lira (TRY)</option>
+                    <option value="JPY">Japanese Yen (JPY)</option>
+                    <option value="CAD">Canadian Dollar (CAD)</option>
+                </select>
+                <p class="setting-desc">Auto-converts purchasing power to historical model dates using live API.</p>
+            </div>
+        </div>
+    </aside>
+
     <div class="container">
         <header>
             <h1>AI Credit Appraiser</h1>
@@ -37,8 +75,9 @@
                     <div class="card form-section">
                         <h2><span class="icon">💼</span> Loan Details</h2>
                         <div class="input-group">
-                            <label for="credit_amount">Credit Amount ($)</label>
+                            <label for="credit_amount">Credit Amount</label>
                             <input type="number" id="credit_amount" name="credit_amount" placeholder="e.g. 5000" min="100" value="5000">
+                            <span id="credit_amount_hint" class="currency-hint">≈ 4,310 DM (1994 value)</span>
                         </div>
                         <div class="input-group">
                             <label for="duration">Duration (Months)</label>
@@ -187,8 +226,9 @@
                     <div class="card form-section">
                         <h2><span class="icon">💼</span> Loan Details</h2>
                         <div class="input-group">
-                            <label for="loan_amnt">Loan Request Amount ($)</label>
+                            <label for="loan_amnt">Loan Request Amount</label>
                             <input type="number" id="loan_amnt" name="loan_amnt" placeholder="e.g. 10000" min="500" value="10000">
+                            <span id="loan_amnt_hint" class="currency-hint">≈ $10,000 USD (Current value)</span>
                         </div>
                         <div class="input-group">
                             <label for="loan_intent">Loan Intent</label>
@@ -231,8 +271,9 @@
                             <input type="number" id="person_age" name="person_age" min="18" max="120" value="28">
                         </div>
                         <div class="input-group">
-                            <label for="person_income">Annual Income ($)</label>
+                            <label for="person_income">Annual Income</label>
                             <input type="number" id="person_income" name="person_income" min="0" value="60000">
+                            <span id="person_income_hint" class="currency-hint">≈ $60,000 USD (Current value)</span>
                         </div>
                         <div class="input-group">
                             <label for="person_home_ownership">Home Ownership</label>
@@ -292,6 +333,11 @@
                 <button id="reset-btn" class="btn-secondary">New Appraisal</button>
             </div>
         </div>
+
+        <footer>
+            <p>Made by Mehmet Efe Ergin, Yusuf Berk Baytok, Yunis Ibrahimov, Islam Pashazade</p>
+            <p><a href="https://github.com/K4hveci/ai-credit-approval-system" target="_blank">View Project on GitHub</a></p>
+        </footer>
 
     </div>
 

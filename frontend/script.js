@@ -13,23 +13,105 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let modelReady = false;
     let currentModelId = 'model_1';
+    let currentTheme = 'default';
+    let currencyRates = null;
+    let selectedCurrency = 'USD';
 
+    // Elements
     const modelSelector = document.getElementById('model_id');
     const model1Fields = document.getElementById('model-1-fields');
     const model2Fields = document.getElementById('model-2-fields');
+    
+    // Settings Elements
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsSidebar = document.getElementById('settings-sidebar');
+    const closeSettings = document.getElementById('close-settings');
+    const themeSelector = document.getElementById('theme-selector');
+    const currencySelector = document.getElementById('currency-selector');
+    
+    // Inputs that need currency conversion
+    const creditAmountInput = document.getElementById('credit_amount');
+    const loanAmntInput = document.getElementById('loan_amnt');
+    const personIncomeInput = document.getElementById('person_income');
+    
+    const creditHint = document.getElementById('credit_amount_hint');
+    const loanHint = document.getElementById('loan_amnt_hint');
+    const incomeHint = document.getElementById('person_income_hint');
 
+    // Sidebar Toggle
+    settingsBtn.addEventListener('click', () => settingsSidebar.classList.add('open'));
+    closeSettings.addEventListener('click', () => settingsSidebar.classList.remove('open'));
+
+    // Theme Toggle
+    themeSelector.addEventListener('change', (e) => {
+        currentTheme = e.target.value;
+        document.body.classList.remove('theme-laotse', 'theme-bank');
+        document.getElementById('bank-logo').classList.add('hidden');
+        if (currentTheme === 'laotse') document.body.classList.add('theme-laotse');
+        if (currentTheme === 'bank') {
+            document.body.classList.add('theme-bank');
+            document.getElementById('bank-logo').classList.remove('hidden');
+        }
+    });
+
+    // Model Selector
     modelSelector.addEventListener('change', (e) => {
         currentModelId = e.target.value;
         if (currentModelId === 'model_2') {
-            document.body.classList.add('theme-laotse');
             model1Fields.style.display = 'none';
             model2Fields.style.display = 'block';
         } else {
-            document.body.classList.remove('theme-laotse');
             model1Fields.style.display = 'block';
             model2Fields.style.display = 'none';
         }
+        updateCurrencyHints();
     });
+
+    // Currency Initialization & Live API
+    async function initCurrencyAPI() {
+        try {
+            const res = await fetch('https://open.er-api.com/v6/latest/EUR');
+            const data = await res.json();
+            currencyRates = data.rates;
+            updateCurrencyHints();
+        } catch (e) {
+            console.error('Failed to fetch currency rates', e);
+        }
+    }
+    initCurrencyAPI();
+
+    currencySelector.addEventListener('change', (e) => {
+        selectedCurrency = e.target.value;
+        updateCurrencyHints();
+    });
+
+    [creditAmountInput, loanAmntInput, personIncomeInput].forEach(inp => {
+        inp.addEventListener('input', updateCurrencyHints);
+    });
+
+    function updateCurrencyHints() {
+        if (!currencyRates) return;
+        
+        const rate = currencyRates[selectedCurrency];
+        
+        if (currentModelId === 'model_1') {
+            const amount = parseFloat(creditAmountInput.value) || 0;
+            const eurAmount = amount / rate;
+            const dmAmount = Math.round(eurAmount / 0.86); // 1 DM (1994) = 0.86 EUR (2026 inflation)
+            creditHint.innerText = `≈ ${dmAmount.toLocaleString()} DM (1994 Purchasing Power)`;
+        } else {
+            // Model 2
+            const usdRate = currencyRates['USD'];
+            const loanAmnt = parseFloat(loanAmntInput.value) || 0;
+            const incomeAmnt = parseFloat(personIncomeInput.value) || 0;
+            
+            const loanUsd = Math.round((loanAmnt / rate) * usdRate);
+            const incomeUsd = Math.round((incomeAmnt / rate) * usdRate);
+            
+            loanHint.innerText = `≈ $${loanUsd.toLocaleString()} USD (Model Native)`;
+            incomeHint.innerText = `≈ $${incomeUsd.toLocaleString()} USD (Model Native)`;
+        }
+    }
 
     const pollStatus = setInterval(async () => {
         try {
@@ -59,8 +141,23 @@ document.addEventListener('DOMContentLoaded', () => {
         
         inputs.forEach(input => {
             if (input.name && input.name !== 'loan_grade') {
-                const value = input.value;
-                dataPayload[input.name] = !isNaN(value) && value.trim() !== '' ? Number(value) : value;
+                let value = input.value;
+                if (!isNaN(value) && value.trim() !== '') {
+                    value = Number(value);
+                    
+                    // Apply Algorithm Conversions before sending
+                    if (currencyRates) {
+                        const rate = currencyRates[selectedCurrency];
+                        const usdRate = currencyRates['USD'];
+                        if (currentModelId === 'model_1' && input.name === 'credit_amount') {
+                            value = Math.round((value / rate) / 0.86); // To DM
+                        }
+                        if (currentModelId === 'model_2' && (input.name === 'loan_amnt' || input.name === 'person_income')) {
+                            value = Math.round((value / rate) * usdRate); // To USD
+                        }
+                    }
+                }
+                dataPayload[input.name] = value;
             }
         });
         
